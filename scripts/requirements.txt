@@ -1,0 +1,9 @@
+# --- CI (used by GitHub Actions workflow) ---
+requests==2.32.3
+beautifulsoup4==4.12.3
+
+# --- Local only (photo processing + ASCII generation) ---
+# Pillow              # make_ascii_svg.py, prep_photo.py
+# opencv-python       # prep_photo.py
+# numpy               # prep_photo.py
+# rembg               # prep_photo.py (background removal)
