@@ -32,23 +32,44 @@ def fetch_days():
         print("no calendar cells found -- github markup may have changed", file=sys.stderr)
         sys.exit(1)
 
+    # one pass over the tooltips instead of a full-document search per cell
+    tooltips = {tt.get("for"): tt.get_text(strip=True) for tt in soup.find_all("tool-tip")}
+
     days = []
+    unparsed = 0
     for td in cells:
         date = td.get("data-date")
         if not date:
             continue
-        td_id = td.get("id")
-        tooltip_el = soup.find("tool-tip", attrs={"for": td_id}) if td_id else None
-        text = tooltip_el.get_text(strip=True) if tooltip_el else ""
+        text = tooltips.get(td.get("id"), "")
         if re.search(r"no contributions", text, re.I):
             count = 0
         else:
             m = re.match(r"(\d+)", text)
-            count = int(m.group(1)) if m else 0
+            if m:
+                count = int(m.group(1))
+            else:
+                unparsed += 1
+                count = 0
         days.append({"date": date, "count": count})
+
+    # if GitHub's markup changes, tooltips stop matching and every day would
+    # silently read as 0 -- refuse to continue rather than overwrite real data.
+    if days and unparsed > len(days) * 0.05:
+        print(f"could not parse {unparsed}/{len(days)} day tooltips -- "
+              "github markup may have changed", file=sys.stderr)
+        sys.exit(1)
 
     days.sort(key=lambda d: d["date"])
     return days
+
+
+def load_existing():
+    try:
+        with open(OUT_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
 
 
 def compute_current_streak(days):
@@ -122,7 +143,19 @@ def build_data(days):
 
 if __name__ == "__main__":
     days = fetch_days()
+    existing = load_existing()
+
+    if existing and existing.get("days") == days:
+        # nothing changed -- leave the file untouched so no commit is made
+        print(f"{OUT_PATH} already up to date; not rewriting")
+        sys.exit(0)
+
     data = build_data(days)
+    if existing and existing.get("total_contributions", 0) > 0 and data["total_contributions"] == 0:
+        print("scrape returned 0 contributions but previous data was non-zero -- "
+              "refusing to overwrite (likely a scrape failure)", file=sys.stderr)
+        sys.exit(1)
+
     os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
     with open(OUT_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)

@@ -10,6 +10,7 @@ Run by .github/workflows/update-profile-art.yml after fetch_contributions.py.
 """
 import datetime
 import json
+import math
 import os
 
 HERE = os.path.dirname(__file__)
@@ -43,26 +44,20 @@ CELL_DUR = 0.42
 
 
 def level_for(count, max_count):
-    """Adaptive thresholds based on the user's actual max contribution count.
+    """Map a day's count to a palette level (0 = empty, 1..5 = increasing).
 
-    Divides the range [1, max_count] into 5 equal buckets so the full color
-    palette is used regardless of whether the user averages 2 or 50 per day.
+    Uses a LOG scale over [1, max_count]. A linear scale lets one outlier day
+    (e.g. 16 when most days are 1-3) squash nearly every box into level 1, so
+    the graph reads as one flat shade. On a log scale each doubling climbs a
+    level, so 1 / 2-3 / 4-7 / 8-15 / 16+ stay visually distinct, while the
+    busiest day still lands on the top color.
     """
-    if count == 0:
+    if count <= 0:
         return 0
-    if max_count <= 0:
+    if max_count <= 1:
         return 1
-    # 5 levels mapped evenly across [1, max_count]
-    ratio = count / max_count
-    if ratio <= 0.2:
-        return 1
-    if ratio <= 0.4:
-        return 2
-    if ratio <= 0.6:
-        return 3
-    if ratio <= 0.8:
-        return 4
-    return 5
+    ratio = math.log(count) / math.log(max_count)   # 0 at 1, 1.0 at max
+    return 1 + min(4, int(ratio * 4 + 1e-9))
 
 
 def build_grid(days, max_count):

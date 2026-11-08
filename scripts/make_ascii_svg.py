@@ -149,12 +149,16 @@ def build_svg():
     status_line_y = TITLEBAR_H + ART_H + PAD * 0.35
     status_y = status_line_y + 19
     status_text = f"{USERNAME}@github:~$ whoami "
-    # Calculate cursor x position dynamically from text length (~7.8px per monospace char at size 13)
-    cursor_x = PAD + int(len(status_text) * 7.8) + int(len(DISPLAY_NAME) * 7.8)
+    # Pin the status line to an exact width with textLength (like the art rows)
+    # so the cursor lands right after the name whatever monospace font renders.
+    char_w = 7.8   # nominal advance of a 13px monospace glyph (0.6em)
+    status_w = (len(status_text) + len(DISPLAY_NAME)) * char_w
+    cursor_x = PAD + status_w + 2
     parts.append(f'<line x1="0" y1="{status_line_y:.1f}" x2="{CANVAS_W}" y2="{status_line_y:.1f}" stroke="{FRAME}"/>')
-    parts.append(f'<text x="{PAD}" y="{status_y:.1f}" fill="{TITLE_TEXT}" font-size="13">'
-                 f'{status_text}<tspan fill="{INK}">{DISPLAY_NAME}</tspan></text>')
-    parts.append(f'<rect x="{cursor_x}" y="{status_y-12:.1f}" width="8" height="14" fill="{INK}">'
+    parts.append(f'<text xml:space="preserve" x="{PAD}" y="{status_y:.1f}" fill="{TITLE_TEXT}" font-size="13" '
+                 f'textLength="{status_w:.1f}" lengthAdjust="spacingAndGlyphs">'
+                 f'{html.escape(status_text)}<tspan fill="{INK}">{html.escape(DISPLAY_NAME)}</tspan></text>')
+    parts.append(f'<rect x="{cursor_x:.1f}" y="{status_y-12:.1f}" width="8" height="14" fill="{INK}">'
                  f'<animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.5;0.51;1" '
                  f'dur="1s" repeatCount="indefinite"/></rect>')
 
