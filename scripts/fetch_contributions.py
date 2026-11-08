@@ -51,7 +51,13 @@ def fetch_days():
             else:
                 unparsed += 1
                 count = 0
-        days.append({"date": date, "count": count})
+        # GitHub's own color bucket (0-4) for this day -- using it verbatim is
+        # what makes our graph shade exactly like the one on the profile page.
+        try:
+            level = int(td.get("data-level", ""))
+        except ValueError:
+            level = None
+        days.append({"date": date, "count": count, "level": level})
 
     # if GitHub's markup changes, tooltips stop matching and every day would
     # silently read as 0 -- refuse to continue rather than overwrite real data.
@@ -61,7 +67,26 @@ def fetch_days():
         sys.exit(1)
 
     days.sort(key=lambda d: d["date"])
-    return days
+
+    # month labels exactly as GitHub lays them out: each spans N week-columns
+    months = []
+    for td in soup.select("td.ContributionCalendar-label[colspan]"):
+        label = td.find("span", attrs={"aria-hidden": "true"})
+        try:
+            span = int(td["colspan"])
+        except ValueError:
+            continue
+        months.append({"label": label.get_text(strip=True) if label else "", "span": span})
+
+    # the headline number GitHub prints above the graph
+    github_total = None
+    h2 = soup.find(id="js-contribution-activity-description")
+    if h2:
+        m = re.search(r"([\d,]+)\s+contribution", h2.get_text(" ", strip=True))
+        if m:
+            github_total = int(m.group(1).replace(",", ""))
+
+    return days, months, github_total
 
 
 def load_existing():
@@ -109,12 +134,12 @@ def compute_longest_streak(days):
     return longest, longest_start, longest_end
 
 
-def build_data(days):
+def build_data(days, months=None, github_total=None):
     if not days:
         print("no contribution days found -- cannot build data", file=sys.stderr)
         sys.exit(1)
 
-    total = sum(d["count"] for d in days)
+    total = github_total if github_total is not None else sum(d["count"] for d in days)
     active_days = sum(1 for d in days if d["count"] > 0)
     best = max(days, key=lambda d: d["count"])
     cur_len, cur_start, cur_end = compute_current_streak(days)
@@ -137,20 +162,23 @@ def build_data(days):
         "longest_streak": {"length": long_len, "start": long_start, "end": long_end},
         "best_day": {"date": best["date"], "count": best["count"]},
         "monthly": monthly_list,
+        "month_labels": months or [],
         "days": days,
     }
 
 
 if __name__ == "__main__":
-    days = fetch_days()
+    days, months, github_total = fetch_days()
     existing = load_existing()
 
-    if existing and existing.get("days") == days:
+    if (existing and existing.get("days") == days
+            and existing.get("month_labels") == months
+            and existing.get("total_contributions") == (github_total or sum(d["count"] for d in days))):
         # nothing changed -- leave the file untouched so no commit is made
         print(f"{OUT_PATH} already up to date; not rewriting")
         sys.exit(0)
 
-    data = build_data(days)
+    data = build_data(days, months, github_total)
     if existing and existing.get("total_contributions", 0) > 0 and data["total_contributions"] == 0:
         print("scrape returned 0 contributions but previous data was non-zero -- "
               "refusing to overwrite (likely a scrape failure)", file=sys.stderr)

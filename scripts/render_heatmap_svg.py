@@ -17,8 +17,9 @@ HERE = os.path.dirname(__file__)
 IN_PATH = os.path.join(HERE, "..", "data", "contributions.json")
 OUT_PATH = os.path.join(HERE, "..", "contrib-heatmap.svg")
 
-# GitHub-ish green ramp: empty -> brightest. Level 5 is a brighter neon top end.
-PALETTE = ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353", "#69f0a0"]
+# GitHub's own dark-theme contribution colors (Primer contribution-default
+# bgColor-0..4), so each box matches the profile page shade for shade.
+PALETTE = ["#151b23", "#033a16", "#196c2e", "#2ea043", "#56d364"]
 
 CELL = 12
 GAP = 3
@@ -28,9 +29,9 @@ LEFT_LABEL_W = 30
 TOP_LABEL_H = 20
 TITLEBAR_H = 30
 
-BG = "#0a0e14"
-BG2 = "#0d1420"
-FRAME = "#1f6feb"
+BG = "#0d1117"
+BG2 = "#111722"
+FRAME = "#30363d"
 MUTED = "#7d8590"
 TEXT = "#e6edf3"
 ACCENT = "#22d3ee"
@@ -43,21 +44,23 @@ ROW_T = 0.045   # per-row delay contribution (top -> bottom cascade)
 CELL_DUR = 0.42
 
 
-def level_for(count, max_count):
-    """Map a day's count to a palette level (0 = empty, 1..5 = increasing).
+def level_for(day, max_count):
+    """Palette level 0-4 for a day.
 
-    Uses a LOG scale over [1, max_count]. A linear scale lets one outlier day
-    (e.g. 16 when most days are 1-3) squash nearly every box into level 1, so
-    the graph reads as one flat shade. On a log scale each doubling climbs a
-    level, so 1 / 2-3 / 4-7 / 8-15 / 16+ stay visually distinct, while the
-    busiest day still lands on the top color.
+    Prefers GitHub's own bucket (data-level scraped by fetch_contributions.py)
+    so the graph matches the profile page exactly. Falls back to a log scale
+    for older data files without it, so one outlier day can't flatten the rest.
     """
+    lvl = day.get("level")
+    if isinstance(lvl, int) and 0 <= lvl < len(PALETTE):
+        return lvl
+    count = day["count"]
     if count <= 0:
         return 0
     if max_count <= 1:
         return 1
     ratio = math.log(count) / math.log(max_count)   # 0 at 1, 1.0 at max
-    return 1 + min(4, int(ratio * 4 + 1e-9))
+    return 1 + min(3, int(ratio * 3 + 1e-9))
 
 
 def build_grid(days, max_count):
@@ -71,7 +74,7 @@ def build_grid(days, max_count):
         weekday = (date.weekday() + 1) % 7
         while len(col) < weekday:
             col.append(None)
-        col.append((d["date"], d["count"], level_for(d["count"], max_count)))
+        col.append((d["date"], d["count"], level_for(d, max_count)))
         if len(col) == 7:
             grid.append(col)
             col = []
@@ -91,17 +94,26 @@ def render(data):
     art_h = 7 * STEP
 
     month_labels = []
-    seen_months = set()
-    for ci, column in enumerate(grid):
-        for cell in column:
-            if cell is None:
-                continue
-            date = datetime.date.fromisoformat(cell[0])
-            key = (date.year, date.month)
-            if key not in seen_months and date.day <= 7:
-                seen_months.add(key)
-                month_labels.append((ci, date.strftime("%b")))
-            break
+    if data.get("month_labels"):
+        # GitHub's own header: each month spans N week-columns. Like GitHub,
+        # skip a label whose span is too narrow to fit without colliding.
+        ci = 0
+        for m in data["month_labels"]:
+            if m["span"] >= 2:
+                month_labels.append((ci, m["label"]))
+            ci += m["span"]
+    else:
+        seen_months = set()
+        for ci, column in enumerate(grid):
+            for cell in column:
+                if cell is None:
+                    continue
+                date = datetime.date.fromisoformat(cell[0])
+                key = (date.year, date.month)
+                if key not in seen_months and date.day <= 7:
+                    seen_months.add(key)
+                    month_labels.append((ci, date.strftime("%b")))
+                break
 
     canvas_w = PAD + LEFT_LABEL_W + art_w + PAD
     stats_h = 88
@@ -146,7 +158,8 @@ def render(data):
             delay = ci * COL_T + ri * ROW_T
             plural = "s" if count != 1 else ""
             parts.append(
-                f'<rect x="{gx}" y="{gy}" width="{CELL}" height="{CELL}" rx="2.5" '
+                f'<rect x="{gx}" y="{gy}" width="{CELL}" height="{CELL}" rx="2" '
+                f'stroke="#ffffff" stroke-opacity="0.05" stroke-width="1" '
                 f'fill="{PALETTE[lvl]}" opacity="0">'
                 f'<animate attributeName="opacity" from="0" to="1" begin="{delay:.3f}s" '
                 f'dur="{CELL_DUR:.2f}s" fill="freeze"/>'
@@ -159,7 +172,8 @@ def render(data):
     parts.append(f'<text x="{leg_x}" y="{leg_y + CELL*0.8:.1f}" fill="{MUTED}" font-size="10" text-anchor="end">Less</text>')
     lx = leg_x + 8
     for lvl, color in enumerate(PALETTE):
-        parts.append(f'<rect x="{lx}" y="{leg_y}" width="{CELL-1}" height="{CELL-1}" rx="2.2" fill="{color}"/>')
+        parts.append(f'<rect x="{lx}" y="{leg_y}" width="{CELL-1}" height="{CELL-1}" rx="2" fill="{color}" '
+                     f'stroke="#ffffff" stroke-opacity="0.05"/>')
         lx += CELL
     parts.append(f'<text x="{lx + 4}" y="{leg_y + CELL*0.8:.1f}" fill="{MUTED}" font-size="10">More</text>')
 
