@@ -1,12 +1,12 @@
 {
   "username": "theaadishjain",
-  "generated_at": "2026-11-14T13:29:57Z",
+  "generated_at": "2026-11-15T13:55:21Z",
   "range": {
-    "start": "2025-11-09",
-    "end": "2026-11-14"
+    "start": "2025-11-16",
+    "end": "2026-11-15"
   },
   "total_contributions": 369,
-  "active_days": 262,
+  "active_days": 260,
   "avg_per_active_day": 1.4,
   "current_streak": {
     "length": 0,
@@ -25,7 +25,7 @@
   "monthly": [
     {
       "month": "2025-11",
-      "total": 4
+      "total": 0
     },
     {
       "month": "2025-12",
@@ -79,7 +79,7 @@
   "month_labels": [
     {
       "label": "Nov",
-      "span": 4
+      "span": 3
     },
     {
       "label": "Dec",
@@ -127,45 +127,10 @@
     },
     {
       "label": "Nov",
-      "span": 2
+      "span": 3
     }
   ],
   "days": [
-    {
-      "date": "2025-11-09",
-      "count": 2,
-      "level": 2
-    },
-    {
-      "date": "2025-11-10",
-      "count": 2,
-      "level": 2
-    },
-    {
-      "date": "2025-11-11",
-      "count": 0,
-      "level": 0
-    },
-    {
-      "date": "2025-11-12",
-      "count": 0,
-      "level": 0
-    },
-    {
-      "date": "2025-11-13",
-      "count": 0,
-      "level": 0
-    },
-    {
-      "date": "2025-11-14",
-      "count": 0,
-      "level": 0
-    },
-    {
-      "date": "2025-11-15",
-      "count": 0,
-      "level": 0
-    },
     {
       "date": "2025-11-16",
       "count": 0,
@@ -1983,6 +1948,11 @@
     },
     {
       "date": "2026-11-14",
+      "count": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-11-15",
       "count": 0,
       "level": 0
     }
