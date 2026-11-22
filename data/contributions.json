@@ -1,9 +1,9 @@
 {
   "username": "theaadishjain",
-  "generated_at": "2026-11-21T14:38:35Z",
+  "generated_at": "2026-11-22T14:33:17Z",
   "range": {
-    "start": "2025-11-16",
-    "end": "2026-11-21"
+    "start": "2025-11-23",
+    "end": "2026-11-22"
   },
   "total_contributions": 365,
   "active_days": 260,
@@ -79,7 +79,7 @@
   "month_labels": [
     {
       "label": "Nov",
-      "span": 3
+      "span": 2
     },
     {
       "label": "Dec",
@@ -127,45 +127,10 @@
     },
     {
       "label": "Nov",
-      "span": 3
+      "span": 4
     }
   ],
   "days": [
-    {
-      "date": "2025-11-16",
-      "count": 0,
-      "level": 0
-    },
-    {
-      "date": "2025-11-17",
-      "count": 0,
-      "level": 0
-    },
-    {
-      "date": "2025-11-18",
-      "count": 0,
-      "level": 0
-    },
-    {
-      "date": "2025-11-19",
-      "count": 0,
-      "level": 0
-    },
-    {
-      "date": "2025-11-20",
-      "count": 0,
-      "level": 0
-    },
-    {
-      "date": "2025-11-21",
-      "count": 0,
-      "level": 0
-    },
-    {
-      "date": "2025-11-22",
-      "count": 0,
-      "level": 0
-    },
     {
       "date": "2025-11-23",
       "count": 0,
@@ -1983,6 +1948,11 @@
     },
     {
       "date": "2026-11-21",
+      "count": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-11-22",
       "count": 0,
       "level": 0
     }
